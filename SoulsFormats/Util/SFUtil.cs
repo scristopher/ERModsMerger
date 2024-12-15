@@ -8,8 +8,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using EasyCompressor;
-using ZstdSharp;
+using ZstdNet;
 
 namespace SoulsFormats
 {
@@ -330,23 +329,9 @@ namespace SoulsFormats
             }
         }
 
-        public static int WriteZstd(BinaryWriterEx bw, byte compressionLevel, Span<byte> input)
-        {
-            long start = bw.Position;
-
-
-            var compressor = new ZstdSharpCompressor(compressionLevel);
-            var compressedData = compressor.Compress(input.ToArray());
-
-            var data = input.ToArray();
-            using (var deflateStream = new DeflateStream(bw.Stream, CompressionMode.Compress, true))
-            {
-                deflateStream.Write(data, 0, input.Length);
-            }
-
-            return (int)(bw.Position - start);
-        }
-
+        /**
+         * Written by ClayAmore
+         */
         public static byte[] ReadZstd(BinaryReaderEx br, int compressedSize)
         {
             byte[] compressed = br.ReadBytes(compressedSize);
@@ -362,18 +347,12 @@ namespace SoulsFormats
             }
         }
 
-        public static byte[] ReadZstdNew(BinaryReaderEx br, int compressedSize)
+        public static byte[] WriteZstd(Span<byte> data, int compressionLevel)
         {
-            byte[] compressed = br.ReadBytes(compressedSize);
-
-            using (var decompressedStream = new MemoryStream())
+            var options = new CompressionOptions(null, new Dictionary<ZSTD_cParameter, int> { { ZSTD_cParameter.ZSTD_c_contentSizeFlag, 0 }, { ZSTD_cParameter.ZSTD_c_windowLog, 16 } }, compressionLevel);
+            using (var compressor = new Compressor(options))
             {
-                using (var compressedStream = new MemoryStream(compressed))
-                using (var deflateStream = new DecompressionStream(compressedStream))
-                {
-                    deflateStream.CopyTo(decompressedStream);
-                }
-                return decompressedStream.ToArray();
+                return compressor.Wrap(data).ToArray();
             }
         }
 
@@ -567,7 +546,7 @@ namespace SoulsFormats
             File.WriteAllBytes(path, bytes);
         }
 
-        private static readonly byte[] erRegulationKey = ParseHexString("99 BF FC 36 6A 6B C8 C6 F5 82 7D 09 36 02 D6 76 C4 28 92 A0 1C 20 7F B0 24 D3 AF 4E 49 3F EF 99");
+        public static readonly byte[] erRegulationKey = ParseHexString("99 BF FC 36 6A 6B C8 C6 F5 82 7D 09 36 02 D6 76 C4 28 92 A0 1C 20 7F B0 24 D3 AF 4E 49 3F EF 99");
 
         /// <summary>
         /// Decrypts and unpacks ER's regulation BND4 from the specified path.
@@ -598,9 +577,18 @@ namespace SoulsFormats
         /// <summary>
         /// Repacks and encrypts ER's regulation BND4 to the specified path.
         /// </summary>
-        public static void EncryptERRegulation(string path, BND4 bnd)
+        public static void EncryptERRegulation(string path, BND4 bnd, DCX.Type compression = DCX.Type.Unknown)
         {
-            byte[] bytes = bnd.Write();
+            byte[] bytes = null;
+            if (compression != DCX.Type.Unknown)
+            {
+                bytes = bnd.Write(compression);
+            }
+            else
+            {
+                bytes = bnd.Write();
+            }
+
             bytes = EncryptByteArray(erRegulationKey, bytes);
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             File.WriteAllBytes(path, bytes);
@@ -642,7 +630,7 @@ namespace SoulsFormats
             return result;
         }
 
-        private static byte[] DecryptByteArray(byte[] key, byte[] secret)
+        public static byte[] DecryptByteArray(byte[] key, byte[] secret)
         {
             byte[] iv = new byte[16];
             byte[] encryptedContent = new byte[secret.Length - 16];
@@ -662,6 +650,14 @@ namespace SoulsFormats
                 cs.Write(encryptedContent, 0, encryptedContent.Length);
             }
             return ms.ToArray();
+        }
+
+        internal static byte[] To4Bit(byte value)
+        {
+            byte[] values = new byte[2];
+            values[0] = (byte)((byte)(value & 0b1111_0000) >> 4);
+            values[1] = (byte)(value & 0b0000_1111);
+            return values;
         }
     }
 }

@@ -58,10 +58,6 @@
 - [x] Config:
   - [ ] Custom location for ModsToMerge and MergedMods
   
-
-#### Fixes
-
-
 </details>
 
 
@@ -121,9 +117,5 @@
 - [x] Better implementation for regulation merging
   - [ ] Manual conflict resolving for the new regulation merge
 
-
-#### Fixes
-
-- [x] new .dcx files not copied in ModsToMerge
 
 </details>

@@ -1,8 +1,14 @@
-﻿using System;
+﻿using SoulsFormats;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
+// FLVER implementation for Model Editor usage
+// Credit to The12thAvenger
 namespace SoulsFormats
 {
     public partial class FLVER2
@@ -13,20 +19,24 @@ namespace SoulsFormats
         public class Mesh : IFlverMesh
         {
             /// <summary>
-            /// When 1, mesh is in bind pose; when 0, it isn't. Most likely has further implications.
+            /// Determines how the mesh is skinned. If it is <see langword="true"/> the mesh is assumed to be in bind pose and is skinned using the <see cref="FLVER.Vertex.BoneIndices"/> and <see cref="FLVER.Vertex.BoneWeights"/> of the vertices.
+            /// If it is <see langword="false"/> each <see cref="FLVER.Vertex"/> specifies a single node to bind to using its <see cref="FLVER.Vertex.NormalW"/>.
+            /// The mesh is assumed to not be in bind pose and the transform of the bound node is applied to each vertex.
             /// </summary>
-            public byte Dynamic { get; set; }
+            public bool UseBoneWeights { get; set; }
+
+            /// <inheritdoc cref="IFlverMesh.Dynamic"/>
+            public byte Dynamic => (byte)(UseBoneWeights ? 1 : 0);
 
             /// <summary>
             /// Index of the material used by all triangles in this mesh.
             /// </summary>
-            /// 
             public int MaterialIndex { get; set; }
 
             /// <summary>
-            /// Apparently does nothing. Usually points to a dummy bone named after the model, possibly just for labelling.
+            /// Index of the node representing this mesh in the <see cref="FLVER2.Nodes"/> list.
             /// </summary>
-            public int DefaultBoneIndex { get; set; }
+            public int NodeIndex { get; set; }
 
             /// <summary>
             /// Indexes of bones in the bone collection which may be used by vertices in this mesh.
@@ -46,10 +56,8 @@ namespace SoulsFormats
             /// <summary>
             /// Vertices in this mesh.
             /// </summary>
-            public FLVER.Vertex[] Vertices { get; set; }
+            public List<FLVER.Vertex> Vertices { get; set; }
             IReadOnlyList<FLVER.Vertex> IFlverMesh.Vertices => Vertices;
-
-            public int VertexCount { get; set; }
 
             /// <summary>
             /// Optional bounding box struct; may be null.
@@ -63,19 +71,16 @@ namespace SoulsFormats
             /// </summary>
             public Mesh()
             {
-                DefaultBoneIndex = -1;
+                NodeIndex = -1;
                 BoneIndices = new List<int>();
                 FaceSets = new List<FaceSet>();
                 VertexBuffers = new List<VertexBuffer>();
-                Vertices = null;
+                Vertices = new List<FLVER.Vertex>();
             }
-            public Mesh Clone()
+
+            internal Mesh(BinaryReaderEx br, FLVERHeader header)
             {
-                return (Mesh)MemberwiseClone();
-            }
-            internal Mesh(BinaryReaderEx br, FLVER2Header header)
-            {
-                Dynamic = br.AssertByte([0, 1]);
+                UseBoneWeights = br.ReadBoolean();
                 br.AssertByte(0);
                 br.AssertByte(0);
                 br.AssertByte(0);
@@ -83,13 +88,13 @@ namespace SoulsFormats
                 MaterialIndex = br.ReadInt32();
                 br.AssertInt32(0);
                 br.AssertInt32(0);
-                DefaultBoneIndex = br.ReadInt32();
+                NodeIndex = br.ReadInt32();
                 int boneCount = br.ReadInt32();
                 int boundingBoxOffset = br.ReadInt32();
                 int boneOffset = br.ReadInt32();
                 int faceSetCount = br.ReadInt32();
                 int faceSetOffset = br.ReadInt32();
-                int vertexBufferCount = br.AssertInt32([1, 2, 3]);
+                int vertexBufferCount = br.ReadInt32();
                 int vertexBufferOffset = br.ReadInt32();
 
                 if (boundingBoxOffset != 0)
@@ -111,10 +116,10 @@ namespace SoulsFormats
                 FaceSets = new List<FaceSet>(faceSetIndices.Length);
                 foreach (int i in faceSetIndices)
                 {
-                    if (!faceSetDict.ContainsKey(i))
+                    if (!faceSetDict.TryGetValue(i, out FaceSet value))
                         throw new NotSupportedException("Face set not found or already taken: " + i);
 
-                    FaceSets.Add(faceSetDict[i]);
+                    FaceSets.Add(value);
                     faceSetDict.Remove(i);
                 }
                 faceSetIndices = null;
@@ -125,10 +130,10 @@ namespace SoulsFormats
                 VertexBuffers = new List<VertexBuffer>(vertexBufferIndices.Length);
                 foreach (int i in vertexBufferIndices)
                 {
-                    if (!vertexBufferDict.ContainsKey(i))
+                    if (!vertexBufferDict.TryGetValue(i, out VertexBuffer value))
                         throw new NotSupportedException("Vertex buffer not found or already taken: " + i);
 
-                    VertexBuffers.Add(vertexBufferDict[i]);
+                    VertexBuffers.Add(value);
                     vertexBufferDict.Remove(i);
                 }
                 vertexBufferIndices = null;
@@ -151,43 +156,25 @@ namespace SoulsFormats
                         }
                     }
                 }
-
-                for (int i = 0; i < VertexBuffers.Count; i++)
-                {
-                    VertexBuffer buffer = VertexBuffers[i];
-                    // This appears to be some kind of flag on edge-compressed vertex buffers
-                    if ((buffer.BufferIndex & ~0x60000000) != i)
-                        throw new FormatException("Unexpected vertex buffer index.");
-                }
             }
 
-            internal void ReadVertices(BinaryReaderEx br, int dataOffset, List<BufferLayout> layouts, FLVER2Header header, FlverCache cache)
+            internal void ReadVertices(BinaryReaderEx br, int dataOffset, List<BufferLayout> layouts, FLVERHeader header)
             {
-                var layoutMembers = layouts.SelectMany(l => l);
-                int uvCap = layoutMembers.Where(m => m.Semantic == FLVER.LayoutSemantic.UV).Count();
-                int tanCap = layoutMembers.Where(m => m.Semantic == FLVER.LayoutSemantic.Tangent).Count();
-                int colorCap = layoutMembers.Where(m => m.Semantic == FLVER.LayoutSemantic.VertexColor).Count();
+                var layoutMembers = layouts.SelectMany(l => l).ToArray();
+                int uvCap = layoutMembers.Count(m => m.Semantic == FLVER.LayoutSemantic.UV);
+                int tanCap = layoutMembers.Count(m => m.Semantic == FLVER.LayoutSemantic.Tangent);
+                int colorCap = layoutMembers.Count(m => m.Semantic == FLVER.LayoutSemantic.VertexColor);
 
-                VertexCount = VertexBuffers[0].VertexCount;
-                Vertices = cache.GetCachedVertexArray(VertexCount);
-                if (Vertices == null)
+                if (VertexBuffers.Count > 0)
                 {
-                    Vertices = new FLVER.Vertex[VertexCount];
-                    for (int i = 0; i < VertexCount; i++)
-                        Vertices[i] = new FLVER.Vertex(uvCap, tanCap, colorCap);
-                    cache.CacheVertexArray(Vertices);
-                }
-                else
-                {
-                    for (int i = 0; i < Vertices.Length; i++)
-                    {
-                        Vertices[i].UVCount = 0;
-                        Vertices[i].TangentCount = 0;
-                    }
-                }
+                    int vertexCount = VertexBuffers[0].VertexCount;
+                    Vertices = new List<FLVER.Vertex>(vertexCount);
+                    for (int i = 0; i < vertexCount; i++)
+                        Vertices.Add(new FLVER.Vertex(uvCap, tanCap, colorCap));
 
-                foreach (VertexBuffer buffer in VertexBuffers)
-                    buffer.ReadBuffer(br, layouts, Vertices, VertexCount, dataOffset, header);
+                    foreach (VertexBuffer buffer in VertexBuffers)
+                        buffer.ReadBuffer(br, layouts, Vertices, vertexCount, dataOffset, header);
+                }
             }
 
             internal void Write(BinaryWriterEx bw, int index)
@@ -200,7 +187,7 @@ namespace SoulsFormats
                 bw.WriteInt32(MaterialIndex);
                 bw.WriteInt32(0);
                 bw.WriteInt32(0);
-                bw.WriteInt32(DefaultBoneIndex);
+                bw.WriteInt32(NodeIndex);
                 bw.WriteInt32(BoneIndices.Count);
                 bw.ReserveInt32($"MeshBoundingBox{index}");
                 bw.ReserveInt32($"MeshBoneIndices{index}");
@@ -210,7 +197,7 @@ namespace SoulsFormats
                 bw.ReserveInt32($"MeshVertexBufferIndices{index}");
             }
 
-            internal void WriteBoundingBox(BinaryWriterEx bw, int index, FLVER2Header header)
+            internal void WriteBoundingBox(BinaryWriterEx bw, int index, FLVERHeader header)
             {
                 if (BoundingBox == null)
                 {
@@ -251,17 +238,22 @@ namespace SoulsFormats
                 else
                 {
                     FaceSet faceSet = FaceSets.Find(fs => fs.Flags == fsFlags) ?? FaceSets[0];
-                    List<int> indices = faceSet.Triangulate(VertexCount < ushort.MaxValue);
+                    List<int> indices = faceSet.Triangulate(Vertices.Count < ushort.MaxValue);
                     var vertices = new List<FLVER.Vertex[]>(indices.Count);
                     for (int i = 0; i < indices.Count - 2; i += 3)
                     {
                         int vi1 = indices[i];
                         int vi2 = indices[i + 1];
                         int vi3 = indices[i + 2];
-                        vertices.Add(new FLVER.Vertex[] { Vertices[vi1], Vertices[vi2], Vertices[vi3] });
+                        vertices.Add(new[] { Vertices[vi1], Vertices[vi2], Vertices[vi3] });
                     }
                     return vertices;
                 }
+            }
+
+            public Mesh Clone()
+            {
+                return (Mesh)MemberwiseClone();
             }
 
             /// <summary>
@@ -293,7 +285,7 @@ namespace SoulsFormats
                     Max = new Vector3(float.MaxValue);
                 }
 
-                internal BoundingBoxes(BinaryReaderEx br, FLVER2Header header)
+                internal BoundingBoxes(BinaryReaderEx br, FLVERHeader header)
                 {
                     Min = br.ReadVector3();
                     Max = br.ReadVector3();
@@ -301,12 +293,17 @@ namespace SoulsFormats
                         Unk = br.ReadVector3();
                 }
 
-                internal void Write(BinaryWriterEx bw, FLVER2Header header)
+                internal void Write(BinaryWriterEx bw, FLVERHeader header)
                 {
                     bw.WriteVector3(Min);
                     bw.WriteVector3(Max);
                     if (header.Version >= 0x2001A)
                         bw.WriteVector3(Unk);
+                }
+
+                public BoundingBoxes Clone()
+                {
+                    return (BoundingBoxes)MemberwiseClone();
                 }
             }
         }

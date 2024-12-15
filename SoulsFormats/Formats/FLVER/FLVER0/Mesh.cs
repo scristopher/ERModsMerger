@@ -31,7 +31,7 @@ namespace SoulsFormats
 
             public int LayoutIndex { get; set; }
 
-            internal Mesh(BinaryReaderEx br, FLVER0 flv, int dataOffset)
+            internal Mesh(BinaryReaderEx br, FLVER0 flv, int dataOffset, int version)
             {
                 Dynamic = br.ReadByte();
                 MaterialIndex = br.ReadByte();
@@ -45,10 +45,10 @@ namespace SoulsFormats
                 Unk46 = br.ReadInt16();
                 br.ReadInt32(); // Vertex indices length
                 int vertexIndicesOffset = br.ReadInt32();
-                int bufferDataLength = br.ReadInt32();
-                int bufferDataOffset = br.ReadInt32();
-                int vertexBuffersOffset1 = br.ReadInt32();
-                int vertexBuffersOffset2 = br.ReadInt32();
+                int bufferDataLength = ReadVarEndianInt32(br, version);
+                int bufferDataOffset = ReadVarEndianInt32(br, version);
+                int vertexBuffersOffset1 = ReadVarEndianInt32(br, version);
+                int vertexBuffersOffset2 = ReadVarEndianInt32(br, version);
                 br.AssertInt32(0);
 
                 if (flv.Header.VertexIndexSize == 16)
@@ -77,7 +77,7 @@ namespace SoulsFormats
                 {
                     br.StepIn(vertexBuffersOffset1);
                     {
-                        List<VertexBuffer> vertexBuffers1 = VertexBuffer.ReadVertexBuffers(br);
+                        List<VertexBuffer> vertexBuffers1 = VertexBuffer.ReadVertexBuffers(br, version);
                         if (vertexBuffers1.Count == 0)
                             throw new NotSupportedException("First vertex buffer list is expected to contain at least 1 buffer.");
                         for (int i = 1; i < vertexBuffers1.Count; i++)
@@ -92,7 +92,7 @@ namespace SoulsFormats
                 {
                     br.StepIn(vertexBuffersOffset2);
                     {
-                        List<VertexBuffer> vertexBuffers2 = VertexBuffer.ReadVertexBuffers(br);
+                        List<VertexBuffer> vertexBuffers2 = VertexBuffer.ReadVertexBuffers(br, version);
                         if (vertexBuffers2.Count != 0)
                             throw new NotSupportedException("Second vertex buffer list is expected to contain exactly 0 buffers.");
                     }
@@ -159,7 +159,10 @@ namespace SoulsFormats
                         }
                         else
                         {
-                            if (vi1 != vi2 && vi1 != vi3 && vi2 != vi3)
+                            // On a few ACFA skybox models of version 0x12 and 0x14, degenerate faces must be included or faces will get flipped
+                            // 0x13 is for now assumed to have the same issue
+                            bool includeDegenerateFaces = version >= 0x12 && version <= 0x14;
+                            if (includeDegenerateFaces || (vi1 != vi2 && vi1 != vi3 && vi2 != vi3))
                             {
                                 // Every time the triangle strip restarts, compare the average vertex normal to the face normal
                                 // and flip the starting direction if they're pointing away from each other.

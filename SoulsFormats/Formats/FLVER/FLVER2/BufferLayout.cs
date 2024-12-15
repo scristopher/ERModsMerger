@@ -1,8 +1,13 @@
-﻿using System;
+﻿using SoulsFormats;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using static SoulsFormats.FLVER;
 
+// FLVER implementation for Model Editor usage
+// Credit to The12thAvenger
 namespace SoulsFormats
 {
     public partial class FLVER2
@@ -21,11 +26,6 @@ namespace SoulsFormats
             /// Creates a new empty BufferLayout.
             /// </summary>
             public BufferLayout() : base() { }
-
-            public BufferLayout Clone()
-            {
-                return (BufferLayout)MemberwiseClone();
-            }
 
             internal BufferLayout(BinaryReaderEx br) : base()
             {
@@ -65,6 +65,10 @@ namespace SoulsFormats
                     member.Write(bw, structOffset);
                     structOffset += member.Size;
                 }
+            }
+            public BufferLayout Clone()
+            {
+                return (BufferLayout)MemberwiseClone();
             }
 
             /// <summary>

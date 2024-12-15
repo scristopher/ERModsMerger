@@ -127,6 +127,7 @@ namespace SoulsFormats
             /// <summary>
             /// The name of the part's model, referencing ModelParam.
             /// </summary>
+            [ModelNameLink]
             public string ModelName { get; set; }
             [IndexProperty]
             public short ModelIndex { get; set; }
@@ -383,11 +384,14 @@ namespace SoulsFormats
                 /// <summary>
                 /// Unknown.
                 /// </summary>
+                /// 
+                [MSBParamReference(ParamName = "", ObjectInstanceParam = true)]
                 public int MapObjectInstanceParamID { get; set; }
 
                 /// <summary>
                 /// Unknown.
                 /// </summary>
+                [MSBParamReference(ParamName = "MapObjectBonfireParam")]
                 public short MapObjectBonfireParamID { get; set; }
 
                 /// <summary>

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.IO;
 
 namespace SoulsFormats
 {
@@ -16,14 +18,14 @@ namespace SoulsFormats
 
             public List<BufferLayout> Layouts { get; set; }
 
-            internal Material(BinaryReaderEx br, bool useUnicode)
+            internal Material(BinaryReaderEx br, bool useUnicode, int version)
             {
                 int nameOffset = br.ReadInt32();
                 int mtdOffset = br.ReadInt32();
                 int texturesOffset = br.ReadInt32();
                 int layoutsOffset = br.ReadInt32();
                 br.ReadInt32(); // Data length from name offset to end of buffer layouts
-                int layoutHeaderOffset = br.ReadInt32();
+                int layoutHeaderOffset = ReadVarEndianInt32(br, version);
                 br.AssertInt32(0);
                 br.AssertInt32(0);
 
@@ -50,14 +52,16 @@ namespace SoulsFormats
                 {
                     br.StepIn(layoutHeaderOffset);
                     {
-                        int layoutCount = br.ReadInt32();
-                        br.AssertInt32((int)br.Position + 0xC);
+                        int layoutCount = ReadVarEndianInt32(br, version);
+                        int assert = (int)br.Position + 0xC;
+
+                        br.AssertInt32([assert, BinaryPrimitives.ReverseEndianness(assert)]);
                         br.AssertInt32(0);
                         br.AssertInt32(0);
                         Layouts = new List<BufferLayout>(layoutCount);
                         for (int i = 0; i < layoutCount; i++)
                         {
-                            int layoutOffset = br.ReadInt32();
+                            int layoutOffset = ReadVarEndianInt32(br, version);
                             br.StepIn(layoutOffset);
                             {
                                 Layouts.Add(new BufferLayout(br));

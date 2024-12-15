@@ -45,6 +45,13 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="EasyCaching.Extensions.EasyCompressor" Version="2.0.2" />
+      <PackageReference Include="EasyCompressor" Version="2.0.2" />
+      <PackageReference Include="EasyCompressor.LZ4" Version="2.0.2" />
+      <PackageReference Include="EasyCompressor.LZMA" Version="2.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\ERModsMerger.Core\ERModsMerger.Core.csproj" />
     </ItemGroup>
 

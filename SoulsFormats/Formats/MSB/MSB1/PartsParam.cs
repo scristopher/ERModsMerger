@@ -171,6 +171,7 @@ namespace SoulsFormats
             /// <summary>
             /// The model of the Part, corresponding to an entry in the ModelParam.
             /// </summary>
+            [ModelNameLink]
             public string ModelName { get; set; }
             private int ModelIndex;
 
@@ -677,12 +678,14 @@ namespace SoulsFormats
                     NPCParamID = -1;
                     TalkID = -1;
                     CharaInitID = -1;
+                    MovePointIndices = new short[8];
                     MovePointNames = new string[8];
                 }
 
                 private protected override void DeepCopyTo(Part part)
                 {
                     var enemy = (EnemyBase)part;
+                    enemy.MovePointIndices = (short[])MovePointIndices.Clone();
                     enemy.MovePointNames = (string[])MovePointNames.Clone();
                 }
 

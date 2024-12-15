@@ -10,6 +10,11 @@ namespace SoulsFormats
     public partial class MSB_AC6 : SoulsFile<MSB_AC6>, IMsb
     {
         /// <summary>
+        /// Holds the current header version so it can be checked against.
+        /// </summary>
+        public static int CurrentVersion = -1;
+
+        /// <summary>
         /// Model files that are available for parts to use.
         /// </summary>
         public ModelParam Models { get; set; }
@@ -97,19 +102,26 @@ namespace SoulsFormats
             // do not contain names for non-Part entries.
             // This fixes an issue where the Reference Map wouldn't find the right
             // map object since Event and Region would share the same disambugated name (e.g. {1}).
+
             MSB.DisambiguateNames(entries.Models, "Model");
             MSB.DisambiguateNames(entries.Events, "Event");
             MSB.DisambiguateNames(entries.Regions, "Region");
             MSB.DisambiguateNames(entries.Parts, "Part");
 
             foreach (Event evt in entries.Events)
+            {
                 evt.GetNames(this, entries);
+            }
 
             foreach (Region region in entries.Regions)
+            {
                 region.GetNames(entries);
+            }
 
             foreach (Part part in entries.Parts)
+            {
                 part.GetNames(this, entries);
+            }
         }
 
         /// <summary>
@@ -126,16 +138,24 @@ namespace SoulsFormats
             entries.Parts = Parts.GetEntries();
 
             foreach (Model model in entries.Models)
+            {
                 model.CountInstances(entries.Parts);
+            }
 
             foreach (Event evt in entries.Events)
+            {
                 evt.GetIndices(this, entries);
+            }
 
             foreach (Region region in entries.Regions)
+            {
                 region.GetIndices(entries);
+            }
 
             foreach (Part part in entries.Parts)
+            {
                 part.GetIndices(this, entries);
+            }
 
             bw.BigEndian = false;
             MSB.WriteHeader(bw);
@@ -185,6 +205,9 @@ namespace SoulsFormats
             internal List<T> Read(BinaryReaderEx br)
             {
                 Version = br.ReadInt32();
+
+                CurrentVersion = Version;
+
                 int offsetCount = br.ReadInt32();
                 long nameOffset = br.ReadInt64();
                 long[] entryOffsets = br.ReadInt64s(offsetCount - 1);

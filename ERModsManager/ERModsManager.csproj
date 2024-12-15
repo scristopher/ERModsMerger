@@ -30,6 +30,8 @@
 	<ItemGroup>
 	  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
 	  <PackageReference Include="ControlzEx" Version="6.0.0" />
+	  <PackageReference Include="EasyCompressor" Version="2.0.2" />
+	  <PackageReference Include="EasyCompressor.LZMA" Version="2.0.2" />
 	</ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

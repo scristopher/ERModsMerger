@@ -403,7 +403,7 @@ namespace ERModsManager.UCs
             {
                 modConfig.Note = $"Merged mods from {profile.ProfileName}:\n\n";
 
-                profile.Mods.ForEach(x => { if(x.Enabled) modConfig.Note += $"- {x.Name}\n"; });
+                profile.Mods.ForEach(x => modConfig.Note += $"- {x.Name}\n");
 
                 var modItem = AddModToList(modConfig, true);
             }

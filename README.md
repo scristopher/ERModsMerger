@@ -1,3 +1,6 @@
+This is just a very simple fork of https://github.com/MadTekN1/ERModsMerger.
+
+
 # Elden Ring Mods Manager - Merger
 Simple tool to manage and merge Elden Ring mods. Work In Progress.
 

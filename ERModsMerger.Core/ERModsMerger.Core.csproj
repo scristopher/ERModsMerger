@@ -27,6 +27,12 @@
 		<EmbeddedResource CopyToOutputDirectory="never" Include="..\Assets\Assets.zip" Link="ERModsMergerAssets\%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <PackageReference Include="EasyCompressor" Version="2.0.2" />
+	  <PackageReference Include="EasyCompressor.LZMA" Version="2.0.2" />
+	</ItemGroup>
+
 	
 
 	<ItemGroup>

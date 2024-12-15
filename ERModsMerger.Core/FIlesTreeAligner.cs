@@ -52,7 +52,7 @@ namespace ERModsMerger.Core
                 foreach (string file in files)
                 {
                     var foundIndex = dictionary.FindIndex(x => x != "" && file.Contains(x));
-                    if (foundIndex != -1 || Path.GetExtension(file) == ".dcx")
+                    if (foundIndex != -1)
                     {
                         int toSkip = dictionary[foundIndex].Split("\\").Length;
 
@@ -88,10 +88,9 @@ namespace ERModsMerger.Core
                     {
                         // delete all files that are not present in dictionary
                         List<string> ToMergefiles = new List<string>();
-                        //!dictionary.Contains(x.Replace(ModsMergerConfig.LoadedConfig.CurrentProfile.ModsToMergeFolderPath + "\\" + modName + "\\", ""))
                         Utils.FindAllFiles(ModsMergerConfig.LoadedConfig.CurrentProfile.ModsToMergeFolderPath + "\\" + modName, ref ToMergefiles, true);
                         ToMergefiles.ForEach(x => {
-                            if (Path.GetExtension(x) == ".prev" || Path.GetExtension(x) == ".bak")
+                            if (!dictionary.Contains(x.Replace(ModsMergerConfig.LoadedConfig.CurrentProfile.ModsToMergeFolderPath + "\\" + modName + "\\", "")))
                             {
                                 File.Delete(x);
                             }

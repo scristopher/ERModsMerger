@@ -56,7 +56,7 @@ namespace SoulsFormats
         /// <param name="lrm">= NULL</param>
         /// <param name="scratchMem">= NULL</param>
         /// <param name="scratchSize">= 0</param>
-        [DllImport($"oo2core_6_win64.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("oo2core_6_win64.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern unsafe long OodleLZ_Compress(
             Oodle.OodleLZ_Compressor compressor,
             byte* rawBuf,
