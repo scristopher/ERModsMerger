@@ -1,7 +1,8 @@
 This is just a very simple fork of https://github.com/MadTekN1/ERModsMerger.
-* I am not making any functionality changes or improvements nor will I respond to any support issues
+* I am not making any functionality changes or improvements nor will I respond to any support issues outside of the program running.
 * This will work with the current ER version
-* EXE files in releases, otherwise just compile with vs ofc
+* EXE files in releases, otherwise just compile with visual studio ofc
+
 
 
 # Elden Ring Mods Manager - Merger
