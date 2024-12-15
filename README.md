@@ -1,4 +1,8 @@
 This is just a very simple fork of https://github.com/MadTekN1/ERModsMerger.
+
+What changed?
+All I have done is updated the soulsformats framework and have included the vanilla 1.16 regulation.bin file. It's possible to do this and rebuild the project in VS in less than an hour.
+
 * I am not making any functionality changes or improvements nor will I respond to any support issues outside of the program running.
 * This will work with the current ER version
 * EXE files in releases, otherwise just compile with visual studio ofc
