@@ -57,7 +57,7 @@ Launch ERModsMerger.exe and let it guide you through the process, it will self e
   * Respect the format presented above and dont forget to add double `\\` between each folders in paths.
   
 
-- Vanilla game/modded regulation.bin don't load: The app might be not compatible with this regulation.bin, make sure your game/mods are up to date (working regulation version is 1.12.2)
+- Vanilla game/modded regulation.bin don't load: The app might be not compatible with this regulation.bin, make sure your game/mods are up to date (working regulation version is 1.16.0)
 
 - Game don't launch, is buggy or mods are missing: Merges can cause some troubles depending of the overwrited files, also this tool only merge internal values of regulation.bin files (for now) and overwrite fields in benefits to the highest priority order. Any other individual conflicting files (eg: emevd.dcx anibnd.dcx msb.dcx etc..) will be overwrited using the same system of priority and potentially causing more troubles.
 
