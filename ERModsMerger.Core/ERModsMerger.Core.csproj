@@ -36,7 +36,13 @@
 	
 
 	<ItemGroup>
-	  <ProjectReference Include="..\SoulsFormats\SoulsFormats.csproj" />
+		<!-- Use local SoulsFormats project reference only - do not add external SoulsFormats package -->
+		<ProjectReference Include="..\SoulsFormats\SoulsFormats.csproj" />
+	</ItemGroup>
+
+	<!-- Prevent accidental external SoulsFormats package references that would conflict with embedded source -->
+	<ItemGroup>
+		<PackageReference Update="SoulsFormats" Version="" PrivateAssets="all" Condition="false" />
 	</ItemGroup>
 
 </Project>
