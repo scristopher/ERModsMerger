@@ -43,7 +43,7 @@ namespace ERModsMerger.Core.Formats
                 vanilla_emevd = new EMEVD_DCX("", files[0].ModRelativePath).Emevd;
                 mainLog.AddSubLog($"Vanilla {files[0].ModRelativePath} - Loaded ✓\n", LOGTYPE.SUCCESS);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 mainLog.AddSubLog($"Could not load vanilla event file\n", LOGTYPE.ERROR);
                 return;
@@ -55,7 +55,7 @@ namespace ERModsMerger.Core.Formats
                 base_emevd = new EMEVD_DCX(files[0].Path).Emevd;
                 mainLog.AddSubLog($"Initial modded event: {files[0].Path} - Loaded ✓\n", LOGTYPE.SUCCESS);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 mainLog.AddSubLog($"Could not load {files[0].Path}\n", LOGTYPE.ERROR);
                 return;
@@ -71,7 +71,7 @@ namespace ERModsMerger.Core.Formats
                     emevd_to_merge = new EMEVD_DCX(files[f].Path).Emevd;
                     mainLog.AddSubLog($"Modded event: {files[f].Path} - Loaded ✓\n");
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     mainLog.AddSubLog($"Could not load {files[f].Path}\n", LOGTYPE.ERROR);
                     break;
@@ -125,7 +125,7 @@ namespace ERModsMerger.Core.Formats
 
                     }//END foreach events
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     mainLog.AddSubLog($"Error during merging {files[f].Path}\n", LOGTYPE.ERROR);
                 }
@@ -142,7 +142,7 @@ namespace ERModsMerger.Core.Formats
                 //write the file in the merged mods directory
                 base_emevd.Write(ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 mainLog.AddSubLog($"Error during saving modded event in {ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath}\n",
                     LOGTYPE.ERROR);

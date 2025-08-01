@@ -248,7 +248,7 @@ else if (keyPressed == 'a' || keyPressed == 'A')
             }
 
             End:
-                // End of program
+                ; // End of program
         }
     }
 }
