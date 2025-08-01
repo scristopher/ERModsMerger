@@ -60,6 +60,7 @@ namespace ERModsMerger.Core.Formats
             catch (Exception e)
             {
                 mainLog.AddSubLog($"Could not load vanilla msgbnd.dcx file - merging without vanilla reference\n", LOGTYPE.WARNING);
+                mainLog.AddSubLog($"Vanilla loading error details: {e.GetType().Name}: {e.Message}\n", LOGTYPE.INFO);
                 hasVanillaReference = false;
             }
 
@@ -74,6 +75,7 @@ namespace ERModsMerger.Core.Formats
             catch (Exception e)
             {
                 mainLog.AddSubLog($"Could not load {files[0].Path}\n", LOGTYPE.ERROR);
+                mainLog.AddSubLog($"Base file loading error details: {e.GetType().Name}: {e.Message}\n", LOGTYPE.ERROR);
                 return;
             }
 
@@ -92,20 +94,28 @@ namespace ERModsMerger.Core.Formats
                 try
                 {
                     fmgs_to_merge = new MSGBND_DCX(files[f].Path).FMGs;
-                    mainLog.AddSubLog($"Modded {files[0].ModRelativePath} - Loaded ✓", LOGTYPE.SUCCESS);
+                    mainLog.AddSubLog($"Modded {files[f].ModRelativePath} - Loaded ✓", LOGTYPE.SUCCESS);
+                    
+                    // Validate FMG structure compatibility
+                    if (fmgs_to_merge.Count != base_fmgs.Count)
+                    {
+                        mainLog.AddSubLog($"Warning: FMG count mismatch - Base: {base_fmgs.Count}, Mod: {fmgs_to_merge.Count}. Proceeding with caution.", LOGTYPE.WARNING);
+                    }
                 }
                 catch (Exception e)
                 {
                     mainLog.AddSubLog($"Could not load {files[f].Path}", LOGTYPE.ERROR);
-                    break;
+                    mainLog.AddSubLog($"Mod file loading error details: {e.GetType().Name}: {e.Message}", LOGTYPE.ERROR);
+                    continue; // Continue with next file instead of breaking
                 }
 
                 try
                 {
-                    for (int fmgFileIndex = 0; fmgFileIndex < fmgs_to_merge.Count; fmgFileIndex++)
+                    int maxFmgIndex = Math.Min(fmgs_to_merge.Count, base_fmgs.Count);
+                    for (int fmgFileIndex = 0; fmgFileIndex < maxFmgIndex; fmgFileIndex++)
                     {
-                        status = "Merging " + files[0].ModRelativePath + " [" + (f+1).ToString() + "/" + files.Count.ToString() + "]";
-                        percent = Math.Round(((double)fmgFileIndex / (double)fmgs_to_merge.Count) * 100, 0).ToString();
+                        status = "Merging " + files[f].ModRelativePath + " [" + (f+1).ToString() + "/" + files.Count.ToString() + "]";
+                        percent = Math.Round(((double)fmgFileIndex / (double)maxFmgIndex) * 100, 0).ToString();
 
                         Console.Write($"\r{status} - Progress: {percent}%                                     ");
 
@@ -114,7 +124,7 @@ namespace ERModsMerger.Core.Formats
                             var entry_id_to_merge = entry_to_merge.ID;
                             var entry_found_in_base = base_fmgs[fmgFileIndex].Entries.Find(x => x.ID == entry_id_to_merge);
                             
-                            if (hasVanillaReference)
+                            if (hasVanillaReference && fmgFileIndex < vanilla_fmgs.Count)
                             {
                                 // Original logic with vanilla file comparison
                                 var entry_found_in_vanilla = vanilla_fmgs[fmgFileIndex].Entries.Find(x=>x.ID==entry_id_to_merge);
@@ -150,13 +160,23 @@ namespace ERModsMerger.Core.Formats
                             }
                         }
                     }
+                    
+                    // Handle extra FMG files if the mod has more than the base
+                    if (fmgs_to_merge.Count > base_fmgs.Count)
+                    {
+                        mainLog.AddSubLog($"Mod has {fmgs_to_merge.Count - base_fmgs.Count} additional FMG files - these will be skipped", LOGTYPE.WARNING);
+                    }
+                    
                     Console.Write($"\r{status} - Progress: 100%                                     ");
 
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-
-                    mainLog.AddSubLog($"Error during merging {files[f].Path}", LOGTYPE.ERROR);
+                    mainLog.AddSubLog($"Error during merging {files[f].Path}: {e.GetType().Name}: {e.Message}", LOGTYPE.ERROR);
+                    if (e.InnerException != null)
+                    {
+                        mainLog.AddSubLog($"Inner exception: {e.InnerException.GetType().Name}: {e.InnerException.Message}", LOGTYPE.ERROR);
+                    }
                 }
 
 
@@ -166,15 +186,24 @@ namespace ERModsMerger.Core.Formats
             {
                 Console.WriteLine();
                 
-                base_msgbnd.Save(ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath);
-                mainLog.AddSubLog("Saving modded .msgbnd.dcx file to: " + ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath, LOGTYPE.SUCCESS);
+                string outputPath = ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath;
+                
+                // Ensure output directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                
+                base_msgbnd.Save(outputPath);
+                mainLog.AddSubLog("Saving modded .msgbnd.dcx file to: " + outputPath, LOGTYPE.SUCCESS);
 
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                mainLog.AddSubLog($"Error during saving modded .msgbnd.dcx file in {ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath}",
+                string outputPath = ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath + "\\" + files[0].ModRelativePath;
+                mainLog.AddSubLog($"Error during saving modded .msgbnd.dcx file to {outputPath}: {e.GetType().Name}: {e.Message}",
                     LOGTYPE.ERROR);
-
+                if (e.InnerException != null)
+                {
+                    mainLog.AddSubLog($"Save inner exception: {e.InnerException.GetType().Name}: {e.InnerException.Message}", LOGTYPE.ERROR);
+                }
             }
 
         }
