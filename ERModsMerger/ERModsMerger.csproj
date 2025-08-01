@@ -55,4 +55,10 @@
         <ProjectReference Include="..\ERModsMerger.Core\ERModsMerger.Core.csproj" />
     </ItemGroup>
 
+    <!-- 
+      DO NOT add external SoulsFormats package references here.
+      SoulsFormats is included as embedded source code via ERModsMerger.Core project reference.
+      Adding an external SoulsFormats package will cause CS0436 type conflicts.
+    -->
+
 </Project>
