@@ -9,6 +9,34 @@ namespace ERModsMerger.Core.Formats
     public static class TextureManager
     {
         /// <summary>
+        /// Safely ensure directory exists for a file path, with proper error handling
+        /// </summary>
+        /// <param name="filePath">Full path to the file</param>
+        /// <param name="log">Logging instance</param>
+        /// <returns>True if directory was created or already exists, false otherwise</returns>
+        public static bool EnsureDirectoryExists(string filePath, LOG log)
+        {
+            try
+            {
+                string directoryPath = Path.GetDirectoryName(filePath);
+                if (string.IsNullOrEmpty(directoryPath))
+                    return false;
+
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                    log.AddSubLog($"Created directory: {directoryPath}", LOGTYPE.INFO);
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                log.AddSubLog($"Failed to create directory for {filePath}: {e.Message}", LOGTYPE.ERROR);
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Copy texture files from mod directories to merged output, handling conflicts
         /// </summary>
         /// <param name="modPaths">List of mod directory paths in merge order</param>

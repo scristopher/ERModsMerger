@@ -27,7 +27,10 @@ namespace ERModsMerger.Core.Formats
         public void Save(string path)
         {
             // Ensure output directory exists
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            if (!TextureManager.EnsureDirectoryExists(path, LOG.Log("Directory Creation")))
+            {
+                throw new DirectoryNotFoundException($"Could not create directory for {path}");
+            }
             
             byte[] flverBytes = FlverData.Write();
             File.WriteAllBytes(path, flverBytes);
@@ -213,29 +216,44 @@ namespace ERModsMerger.Core.Formats
 
         private static void MergeMeshes(FLVER2 baseFLVER, FLVER2 modFLVER, FLVER2? vanillaFLVER, bool hasVanillaReference, LOG log)
         {
-            // Simple mesh merging strategy - for now, just replace with mod meshes
-            // In the future, this could be more sophisticated to merge vertex data
-            
+            // More sophisticated mesh merging strategy
             if (hasVanillaReference && vanillaFLVER != null)
             {
-                // Check if mod has different meshes than vanilla
+                // Check if mod has different mesh count or structure than vanilla
                 if (modFLVER.Meshes.Count != vanillaFLVER.Meshes.Count)
                 {
-                    baseFLVER.Meshes = modFLVER.Meshes;
-                    log.AddSubLog($"Replaced all meshes with modded versions (count changed)", LOGTYPE.INFO);
+                    baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
+                    baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices); // Also update vertices
+                    log.AddSubLog($"Replaced all meshes and vertices (count changed: {modFLVER.Meshes.Count} meshes, {modFLVER.Vertices.Count} vertices)", LOGTYPE.INFO);
                 }
                 else
                 {
-                    // Could implement more detailed mesh comparison here
-                    baseFLVER.Meshes = modFLVER.Meshes;
-                    log.AddSubLog($"Replaced meshes with modded versions", LOGTYPE.INFO);
+                    // Check if individual meshes have changed
+                    bool meshesChanged = false;
+                    for (int i = 0; i < modFLVER.Meshes.Count && i < vanillaFLVER.Meshes.Count; i++)
+                    {
+                        if (modFLVER.Meshes[i].MaterialIndex != vanillaFLVER.Meshes[i].MaterialIndex ||
+                            modFLVER.Meshes[i].Vertices.Count != vanillaFLVER.Meshes[i].Vertices.Count)
+                        {
+                            meshesChanged = true;
+                            break;
+                        }
+                    }
+                    
+                    if (meshesChanged)
+                    {
+                        baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
+                        baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices);
+                        log.AddSubLog($"Replaced meshes due to structural changes", LOGTYPE.INFO);
+                    }
                 }
             }
             else
             {
                 // No vanilla reference - use mod meshes
-                baseFLVER.Meshes = modFLVER.Meshes;
-                log.AddSubLog($"Merged meshes (no vanilla reference)", LOGTYPE.INFO);
+                baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
+                baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices);
+                log.AddSubLog($"Merged meshes and vertices (no vanilla reference): {modFLVER.Meshes.Count} meshes, {modFLVER.Vertices.Count} vertices", LOGTYPE.INFO);
             }
         }
 
@@ -260,7 +278,7 @@ namespace ERModsMerger.Core.Formats
 
         private static bool MaterialsEqual(FLVER2.Material mat1, FLVER2.Material mat2)
         {
-            // Simple material comparison - could be more thorough
+            // Comprehensive material comparison
             if (mat1.Name != mat2.Name) return false;
             if (mat1.MTD != mat2.MTD) return false;
             if (mat1.Textures.Count != mat2.Textures.Count) return false;
@@ -268,7 +286,11 @@ namespace ERModsMerger.Core.Formats
             for (int i = 0; i < mat1.Textures.Count; i++)
             {
                 if (mat1.Textures[i].Path != mat2.Textures[i].Path) return false;
+                if (mat1.Textures[i].Type != mat2.Textures[i].Type) return false;
             }
+            
+            // Compare flags if they exist
+            if (mat1.Flags != mat2.Flags) return false;
             
             return true;
         }
