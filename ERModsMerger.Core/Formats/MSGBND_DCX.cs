@@ -50,15 +50,17 @@ namespace ERModsMerger.Core.Formats
             var mainLog = LOG.Log("Merging Messages (MSGBND)");
 
             List<FMG> vanilla_fmgs = new List<FMG>();
+            bool hasVanillaReference = false;
             try
             {
                 vanilla_fmgs = new MSGBND_DCX("", files[0].ModRelativePath).FMGs;
+                hasVanillaReference = true;
                 mainLog.AddSubLog($"Vanilla {files[0].ModRelativePath} - Loaded ✓\n", LOGTYPE.SUCCESS);
             }
             catch (Exception e)
             {
-                mainLog.AddSubLog($"Could not load vanilla msgbnd.dcx file\n", LOGTYPE.ERROR);
-                return;
+                mainLog.AddSubLog($"Could not load vanilla msgbnd.dcx file - merging without vanilla reference\n", LOGTYPE.WARNING);
+                hasVanillaReference = false;
             }
 
             MSGBND_DCX? base_msgbnd = null;
@@ -75,6 +77,14 @@ namespace ERModsMerger.Core.Formats
                 return;
             }
 
+            if (hasVanillaReference)
+            {
+                mainLog.AddSubLog("Using vanilla file comparison merge strategy", LOGTYPE.INFO);
+            }
+            else
+            {
+                mainLog.AddSubLog("Using fallback merge strategy (no vanilla reference)", LOGTYPE.INFO);
+            }
             
             for (var f = 1; f < files.Count; f++)
             {
@@ -102,23 +112,41 @@ namespace ERModsMerger.Core.Formats
                         foreach (var entry_to_merge in fmgs_to_merge[fmgFileIndex].Entries)
                         {
                             var entry_id_to_merge = entry_to_merge.ID;
-                            var entry_found_in_vanilla = vanilla_fmgs[fmgFileIndex].Entries.Find(x=>x.ID==entry_id_to_merge);
                             var entry_found_in_base = base_fmgs[fmgFileIndex].Entries.Find(x => x.ID == entry_id_to_merge);
                             
-                            if(entry_found_in_vanilla != null && !Utils.AdvancedEquals(entry_to_merge.Text, entry_found_in_vanilla.Text))
+                            if (hasVanillaReference)
                             {
+                                // Original logic with vanilla file comparison
+                                var entry_found_in_vanilla = vanilla_fmgs[fmgFileIndex].Entries.Find(x=>x.ID==entry_id_to_merge);
                                 
-                                if (entry_found_in_base == null)
-                                    base_fmgs[fmgFileIndex].Entries.Insert(fmgs_to_merge[fmgFileIndex].Entries.IndexOf(entry_to_merge), entry_to_merge);
-                                else
-                                    entry_found_in_base = entry_to_merge;
+                                if(entry_found_in_vanilla != null && !Utils.AdvancedEquals(entry_to_merge.Text, entry_found_in_vanilla.Text))
+                                {
+                                    if (entry_found_in_base == null)
+                                        base_fmgs[fmgFileIndex].Entries.Insert(fmgs_to_merge[fmgFileIndex].Entries.IndexOf(entry_to_merge), entry_to_merge);
+                                    else
+                                        entry_found_in_base.Text = entry_to_merge.Text;
+                                }
+                                else if(entry_found_in_vanilla == null)
+                                {
+                                    if (entry_found_in_base == null)
+                                        base_fmgs[fmgFileIndex].Entries.Insert(fmgs_to_merge[fmgFileIndex].Entries.IndexOf(entry_to_merge), entry_to_merge);
+                                    else
+                                        entry_found_in_base.Text = entry_to_merge.Text;
+                                }
                             }
-                            else if(entry_found_in_vanilla == null)
+                            else
                             {
+                                // Fallback logic without vanilla file comparison - merge all entries
                                 if (entry_found_in_base == null)
-                                    base_fmgs[fmgFileIndex].Entries.Insert(fmgs_to_merge[fmgFileIndex].Entries.IndexOf(entry_to_merge), entry_to_merge);
+                                {
+                                    // Add new entry if it doesn't exist in base
+                                    base_fmgs[fmgFileIndex].Entries.Add(entry_to_merge);
+                                }
                                 else
-                                    entry_found_in_base = entry_to_merge;
+                                {
+                                    // Override existing entry with the new one (higher priority)
+                                    entry_found_in_base.Text = entry_to_merge.Text;
+                                }
                             }
                         }
                     }
