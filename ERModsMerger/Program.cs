@@ -1,4 +1,8 @@
-﻿using ERModsMerger;
+﻿// ERModsMerger Program.cs - Uses top-level statements (C# 9+)
+// Do NOT add a Main method here to avoid CS8802 compilation error
+// This file serves as the application entry point using top-level statements
+
+using ERModsMerger;
 using ERModsMerger.Core;
 using System.Text;
 

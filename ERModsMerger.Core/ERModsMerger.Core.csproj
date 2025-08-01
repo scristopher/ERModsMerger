@@ -39,4 +39,9 @@
 	  <ProjectReference Include="..\SoulsFormats\SoulsFormats.csproj" />
 	</ItemGroup>
 
+	<!-- 
+		NOTE: This project references the embedded SoulsFormats source project
+		Do NOT add SoulsFormats as a PackageReference to avoid CS0436 type conflicts
+	-->
+
 </Project>

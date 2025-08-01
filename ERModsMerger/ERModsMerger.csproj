@@ -55,4 +55,9 @@
         <ProjectReference Include="..\ERModsMerger.Core\ERModsMerger.Core.csproj" />
     </ItemGroup>
 
+    <!-- 
+        NOTE: This project uses SoulsFormats via ProjectReference to ERModsMerger.Core
+        Do NOT add SoulsFormats as a PackageReference to avoid CS0436 type conflicts
+    -->
+
 </Project>
