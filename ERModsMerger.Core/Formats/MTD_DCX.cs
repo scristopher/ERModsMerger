@@ -80,17 +80,16 @@ namespace ERModsMerger.Core.Formats
         /// <summary>
         /// Sets or adds a parameter with the specified name and value
         /// </summary>
-        public void SetParameter(string name, MTD.Param.ParamType type, object value)
+        public void SetParameter(string name, MTD.ParamType type, object value)
         {
             var existingParam = GetParameter(name);
             if (existingParam != null)
             {
-                existingParam.Type = type;
                 existingParam.Value = value;
             }
             else
             {
-                MaterialData.Params.Add(new MTD.Param { Name = name, Type = type, Value = value });
+                MaterialData.Params.Add(new MTD.Param(name, type, value));
             }
         }
 
