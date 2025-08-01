@@ -21,7 +21,62 @@ namespace ERModsMerger.Core.Formats
             else
                 data = File.ReadAllBytes(path);
 
-            FlverData = FLVER2.Read(data);
+            // Handle DCX decompression if needed and preserve compression type
+            Memory<byte> processedData;
+            DCX.Type compressionType = DCX.Type.None;
+            
+            if (DCX.Is(data))
+            {
+                processedData = DCX.Decompress(data, out compressionType);
+            }
+            else
+            {
+                processedData = new Memory<byte>(data);
+            }
+
+            FlverData = FLVER2.Read(processedData);
+            // Preserve the original compression type for writing
+            FlverData.Compression = compressionType;
+        }
+
+        // Clean API methods for easy access to model data
+        
+        /// <summary>
+        /// Gets all materials in the model
+        /// </summary>
+        public List<FLVER2.Material> Materials => FlverData.Materials;
+        
+        /// <summary>
+        /// Gets all meshes in the model
+        /// </summary>
+        public List<FLVER2.Mesh> Meshes => FlverData.Meshes;
+        
+        /// <summary>
+        /// Gets the total number of vertices across all meshes
+        /// </summary>
+        public int TotalVertexCount => FlverData.Meshes.Sum(m => m.Vertices.Count);
+        
+        /// <summary>
+        /// Gets all vertices from all meshes as a flat list
+        /// </summary>
+        public List<FLVER.Vertex> GetAllVertices()
+        {
+            var allVertices = new List<FLVER.Vertex>();
+            foreach (var mesh in FlverData.Meshes)
+            {
+                allVertices.AddRange(mesh.Vertices);
+            }
+            return allVertices;
+        }
+        
+        /// <summary>
+        /// Gets vertices for a specific mesh by index
+        /// </summary>
+        public List<FLVER.Vertex> GetVerticesForMesh(int meshIndex)
+        {
+            if (meshIndex < 0 || meshIndex >= FlverData.Meshes.Count)
+                throw new ArgumentOutOfRangeException(nameof(meshIndex));
+            return FlverData.Meshes[meshIndex].Vertices;
         }
 
         public void Save(string path)
@@ -223,8 +278,8 @@ namespace ERModsMerger.Core.Formats
                 if (modFLVER.Meshes.Count != vanillaFLVER.Meshes.Count)
                 {
                     baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
-                    baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices); // Also update vertices
-                    log.AddSubLog($"Replaced all meshes and vertices (count changed: {modFLVER.Meshes.Count} meshes, {modFLVER.Vertices.Count} vertices)", LOGTYPE.INFO);
+                    int totalVertices = modFLVER.Meshes.Sum(m => m.Vertices.Count);
+                    log.AddSubLog($"Replaced all meshes and vertices (count changed: {modFLVER.Meshes.Count} meshes, {totalVertices} vertices)", LOGTYPE.INFO);
                 }
                 else
                 {
@@ -243,7 +298,6 @@ namespace ERModsMerger.Core.Formats
                     if (meshesChanged)
                     {
                         baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
-                        baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices);
                         log.AddSubLog($"Replaced meshes due to structural changes", LOGTYPE.INFO);
                     }
                 }
@@ -252,8 +306,8 @@ namespace ERModsMerger.Core.Formats
             {
                 // No vanilla reference - use mod meshes
                 baseFLVER.Meshes = new List<FLVER2.Mesh>(modFLVER.Meshes);
-                baseFLVER.Vertices = new List<FLVER.Vertex>(modFLVER.Vertices);
-                log.AddSubLog($"Merged meshes and vertices (no vanilla reference): {modFLVER.Meshes.Count} meshes, {modFLVER.Vertices.Count} vertices", LOGTYPE.INFO);
+                int totalVertices = modFLVER.Meshes.Sum(m => m.Vertices.Count);
+                log.AddSubLog($"Merged meshes and vertices (no vanilla reference): {modFLVER.Meshes.Count} meshes, {totalVertices} vertices", LOGTYPE.INFO);
             }
         }
 

@@ -21,7 +21,77 @@ namespace ERModsMerger.Core.Formats
             else
                 data = File.ReadAllBytes(path);
 
-            MaterialData = MTD.Read(data);
+            // Handle DCX decompression if needed and preserve compression type
+            Memory<byte> processedData;
+            DCX.Type compressionType = DCX.Type.None;
+            
+            if (DCX.Is(data))
+            {
+                processedData = DCX.Decompress(data, out compressionType);
+            }
+            else
+            {
+                processedData = new Memory<byte>(data);
+            }
+
+            MaterialData = MTD.Read(processedData);
+            // Preserve the original compression type for writing
+            MaterialData.Compression = compressionType;
+        }
+
+        // Clean API methods for easy access to material data
+        
+        /// <summary>
+        /// Gets the shader path for this material
+        /// </summary>
+        public string ShaderPath => MaterialData.ShaderPath;
+        
+        /// <summary>
+        /// Gets the description for this material
+        /// </summary>
+        public string Description => MaterialData.Description;
+        
+        /// <summary>
+        /// Gets all material parameters
+        /// </summary>
+        public List<MTD.Param> Parameters => MaterialData.Params;
+        
+        /// <summary>
+        /// Gets all texture definitions
+        /// </summary>
+        public List<MTD.Texture> Textures => MaterialData.Textures;
+        
+        /// <summary>
+        /// Gets a parameter by name, or null if not found
+        /// </summary>
+        public MTD.Param GetParameter(string name)
+        {
+            return MaterialData.Params.FirstOrDefault(p => p.Name == name);
+        }
+        
+        /// <summary>
+        /// Gets a texture definition by type, or null if not found
+        /// </summary>
+        public MTD.Texture GetTexture(string type)
+        {
+            return MaterialData.Textures.FirstOrDefault(t => t.Type == type);
+        }
+        
+        /// <summary>
+        /// Sets or adds a parameter with the specified name and value
+        /// </summary>
+        public void SetParameter(string name, MTD.Param.ParamType type, object value)
+        {
+            var existingParam = GetParameter(name);
+            if (existingParam != null)
+            {
+                existingParam.Type = type;
+                existingParam.Value = value;
+            }
+            else
+            {
+                MaterialData.Params.Add(new MTD.Param { Name = name, Type = type, Value = value });
+            }
         }
 
         public void Save(string path)
