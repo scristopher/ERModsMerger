@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Markup;
-using System.Windows.Shapes;
 
 namespace ERModsMerger.Core.BHD5Handler;
 
