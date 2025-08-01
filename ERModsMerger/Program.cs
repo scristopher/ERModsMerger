@@ -2,32 +2,38 @@
 using ERModsMerger.Core;
 using System.Text;
 
-Console.OutputEncoding = Encoding.UTF8;
-
-string[] arguments = args;
-
-LOG.ConsoleOutput = true;
-
-ModsMergerConfig.LoadConfig();
-
-//save the loaded config, this add any new field when app is updated
-if (ModsMergerConfig.LoadedConfig != null)
-    ModsMergerConfig.SaveConfig();
-
-
-if (arguments.Contains("/merge"))
+namespace ERModsMerger
 {
-    Console.ForegroundColor = ConsoleColor.DarkYellow;
-    Console.WriteLine("Welcome to Elden Ring Mods Merger!\n");
-    Console.ResetColor();
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
 
-    ModsMerger.StartMerge(false, false);
-    goto End;
-}
+            string[] arguments = args;
+
+            LOG.ConsoleOutput = true;
+
+            ModsMergerConfig.LoadConfig();
+
+            //save the loaded config, this add any new field when app is updated
+            if (ModsMergerConfig.LoadedConfig != null)
+                ModsMergerConfig.SaveConfig();
+
+
+            if (arguments.Contains("/merge"))
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("Welcome to Elden Ring Mods Merger!\n");
+                Console.ResetColor();
+
+                ModsMerger.StartMerge(false, false);
+                goto End;
+            }
 
  
 
-DialConsole.WriteLine("Welcome to Elden Ring Mods Merger!\n", ConsoleColor.DarkYellow);
+            DialConsole.WriteLine("Welcome to Elden Ring Mods Merger!\n", ConsoleColor.DarkYellow);
 
 Start:
 
@@ -210,37 +216,40 @@ else if (keyPressed == 'a' || keyPressed == 'A')
     DialConsole.WriteLine("\n\nIt's over, press any key to quit!");
     Console.ReadKey();
 }
-else
-{
-    Fail();
-    goto Start;
+            else
+            {
+                Fail();
+                goto Start;
+            }
+
+            void DisplayCurrentConfig()
+            {
+                DialConsole.WriteLine("Current config:");
+                DialConsole.WriteLine("Game Path:\t\t" + ModsMergerConfig.LoadedConfig.GamePath);
+                DialConsole.WriteLine("Mods to be merged:\t" + ModsMergerConfig.LoadedConfig.CurrentProfile.ModsToMergeFolderPath);
+                DialConsole.WriteLine("Merged mods:\t\t" + ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath);
+                Console.WriteLine();
+
+                DialConsole.Write("To modify the config, open and edit ");
+                DialConsole.Write("ERModsMergerConfig\\Config.json", ConsoleColor.DarkYellow);
+                DialConsole.Write(" with any text editor (eg: Notepad), remember to save it.\n");
+            }
+
+            void Fail()
+            {
+                DialConsole.WriteLine("\nBruh! For real? You just had to press one key and you FAILED!\n");
+                Thread.Sleep(2500);
+                DialConsole.WriteLine("Now you win the right to start all over again... cheh");
+                Thread.Sleep(1000);
+                Console.Clear();
+                DialConsole.Write("Welcome to Elden Ring Mods Merger! ", ConsoleColor.DarkYellow);
+                Thread.Sleep(1000);
+                DialConsole.Write("I'm not even kidding.\n\n", ConsoleColor.DarkYellow);
+            }
+
+            End:
+                // End of program
+        }
+    }
 }
-
-
-void DisplayCurrentConfig()
-{
-    DialConsole.WriteLine("Current config:");
-    DialConsole.WriteLine("Game Path:\t\t" + ModsMergerConfig.LoadedConfig.GamePath);
-    DialConsole.WriteLine("Mods to be merged:\t" + ModsMergerConfig.LoadedConfig.CurrentProfile.ModsToMergeFolderPath);
-    DialConsole.WriteLine("Merged mods:\t\t" + ModsMergerConfig.LoadedConfig.CurrentProfile.MergedModsFolderPath);
-    Console.WriteLine();
-
-    DialConsole.Write("To modify the config, open and edit ");
-    DialConsole.Write("ERModsMergerConfig\\Config.json", ConsoleColor.DarkYellow);
-    DialConsole.Write(" with any text editor (eg: Notepad), remember to save it.\n");
-}
-
-void Fail()
-{
-    DialConsole.WriteLine("\nBruh! For real? You just had to press one key and you FAILED!\n");
-    Thread.Sleep(2500);
-    DialConsole.WriteLine("Now you win the right to start all over again... cheh");
-    Thread.Sleep(1000);
-    Console.Clear();
-    DialConsole.Write("Welcome to Elden Ring Mods Merger! ", ConsoleColor.DarkYellow);
-    Thread.Sleep(1000);
-    DialConsole.Write("I'm not even kidding.\n\n", ConsoleColor.DarkYellow);
-}
-
-End:;
 
