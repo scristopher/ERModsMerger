@@ -56,6 +56,7 @@ namespace ERModsMerger.Core
                     case string a when a.Contains("regulation.bin"): RegulationBin.MergeRegulationsV2(conflict.FilesToMerge, manualConflictsResolving); break;
                     case string a when a.Contains(".emevd.dcx"): EMEVD_DCX.MergeFiles(conflict.FilesToMerge); break; //WIP //to be tested
                     case string a when a.Contains(".msgbnd.dcx"): MSGBND_DCX.MergeFiles(conflict.FilesToMerge); break; //WIP //to be tested
+                    case string a when a.Contains(".flver") || a.Contains(".flv"): FLVER_DCX.MergeFiles(conflict.FilesToMerge); break; // New FLVER support
                 }
             }
         }
@@ -118,6 +119,7 @@ namespace ERModsMerger.Core
             {
                 case string a when a.Contains("regulation.bin"): SupportedFormat = true; break;
                 case string a when a.Contains(".msgbnd.dcx"): SupportedFormat = true; break;
+                case string a when a.Contains(".flver") || a.Contains(".flv"): SupportedFormat = true; break; // FLVER support
                 //case string a when a.Contains(".emevd.dcx"): SupportedFormat = true; break;
                 default: SupportedFormat = false; break;
             }
