@@ -40,7 +40,7 @@ namespace ERModsMerger.Core
                     CheckVersionAndEmbeddedExtraction();
                     return LoadedConfig;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     return null;
                 }

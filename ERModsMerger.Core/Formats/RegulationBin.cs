@@ -64,7 +64,7 @@ namespace ERModsMerger.Core.Formats
                 {
                     p.ApplyParamdef(def);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     var name = bnd.Files[i].Name.Split("\\").Last();
                     var message = $"Could not apply ParamDef for {name}";
