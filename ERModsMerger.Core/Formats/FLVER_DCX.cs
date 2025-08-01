@@ -17,7 +17,7 @@ namespace ERModsMerger.Core.Formats
             byte[] data;
             
             if (searchVanillaRelativePath != "")
-                data = BHD5Reader.Read(searchVanillaRelativePath);
+                data = BHD5Reader.Read(searchVanillaRelativePath).ToArray();
             else
                 data = File.ReadAllBytes(path);
 
@@ -342,9 +342,6 @@ namespace ERModsMerger.Core.Formats
                 if (mat1.Textures[i].Path != mat2.Textures[i].Path) return false;
                 if (mat1.Textures[i].Type != mat2.Textures[i].Type) return false;
             }
-            
-            // Compare flags if they exist
-            if (mat1.Flags != mat2.Flags) return false;
             
             return true;
         }

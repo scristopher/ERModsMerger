@@ -17,7 +17,7 @@ namespace ERModsMerger.Core.Formats
             byte[] data;
             
             if (searchVanillaRelativePath != "")
-                data = BHD5Reader.Read(searchVanillaRelativePath);
+                data = BHD5Reader.Read(searchVanillaRelativePath).ToArray();
             else
                 data = File.ReadAllBytes(path);
 
